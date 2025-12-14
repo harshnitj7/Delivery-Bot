@@ -45,8 +45,7 @@ const DELIVERY_CHARGE = 20;
 const DELIVERY_TIME_MINUTES = 20;
 
 // Supabase configuration
-const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+
 
 // QR Code Component
 interface QRCodeProps {
@@ -182,70 +181,42 @@ function App() {
 
   // Checkout handling
   const handleCheckout = async () => {
-    const items = getCartItems();
-    const total = getFinalTotal();
-    const uuid = generateUUID();
-    const orderNum = generateOrderNumber();
-    const deliveryETA = calculateDeliveryTime(DELIVERY_TIME_MINUTES);
+  const items = getCartItems();
+  const total = getFinalTotal();
+  const uuid = generateUUID();          // ACCESS CODE
+  const orderNum = generateOrderNumber();
+  const deliveryETA = calculateDeliveryTime(DELIVERY_TIME_MINUTES);
 
-    const orderData = {
-      id: uuid,
-      order_number: orderNum,
-      customer_name: customerDetails.name,
-      customer_location: customerDetails.location,
-      customer_email: customerDetails.email,
-      items: items.map(item => ({ 
-        name: item.name, 
-        quantity: item.quantity, 
-        price: item.price 
-      })),
-      total: total,
-      expected_delivery_time: deliveryETA,
-      is_used: false,
-      created_at: new Date().toISOString()
-    };
+  try {
+    // 🔴 POST ACCESS CODE TO NODE BACKEND
+    const response = await fetch('http://10.10.211.98:5000/api/token/store', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        value: uuid,
+      }),
+    });
 
-    // Demo mode check
-    if (SUPABASE_URL === 'YOUR_SUPABASE_URL' || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY') {
-      console.warn('Supabase not configured - using demo mode');
-      setAccessCode(uuid);
-      setOrderNumber(orderNum);
-      setDeliveryTime(deliveryETA);
-      setOrderItems(items);
-      setTotalAmount(total);
-      setView('qr');
-      return;
+    if (!response.ok) {
+      throw new Error('Failed to store access code');
     }
 
-    try {
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/access_tokens`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-          'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify(orderData)
-      });
+    // ✅ Proceed only if backend succeeds
+    setAccessCode(uuid);
+    setOrderNumber(orderNum);
+    setDeliveryTime(deliveryETA);
+    setOrderItems(items);
+    setTotalAmount(total);
+    setView('qr');
 
-      if (response.ok || response.status === 201) {
-        setAccessCode(uuid);
-        setOrderNumber(orderNum);
-        setDeliveryTime(deliveryETA);
-        setOrderItems(items);
-        setTotalAmount(total);
-        setView('qr');
-      } else {
-        const errorText = await response.text();
-        console.error('Server response:', response.status, errorText);
-        alert(`Error generating access code: ${response.status}. Check console for details.`);
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Error connecting to server. Please check your Supabase configuration.');
-    }
-  };
+  } catch (error) {
+    console.error('Backend error:', error);
+    alert('Unable to generate QR. Please try again.');
+  }
+};
+
 
   const resetOrder = () => {
     setCart({});
