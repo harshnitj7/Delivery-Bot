@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ShoppingCart, Plus, Minus, X, ArrowLeft, CheckCircle, User, MapPin, Mail } from 'lucide-react';
 
 // Types
