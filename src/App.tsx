@@ -56,9 +56,9 @@ interface QRCodeProps {
 function QRCode({ value, size = 280 }: QRCodeProps) {
   if (!value) return null;
  
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(value)}`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${value}`;
   const backupUrl = `https://chart.googleapis.com/chart?cht=qr&chl=${encodeURIComponent(value)}&chs=${size}x${size}`;
- 
+ 3
   return (
     <div className="flex flex-col items-center">
       <img
@@ -189,15 +189,20 @@ function App() {
 
   try {
     // 🔴 POST ACCESS CODE TO NODE BACKEND
-    const response = await fetch('http://10.10.211.98:5000/api/token/store', {
+    console.log("sending req to backend")
+    
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/token/store`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         value: uuid,
+        customerDetails 
       }),
     });
+
+    console.log(response)
 
     if (!response.ok) {
       throw new Error('Failed to store access code');
